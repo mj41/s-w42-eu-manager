@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your robots · Stackchan manager</title>
+<style>
+  :root {
+    --bg: #f4f6ff; --card: #ffffff; --text: #1e2355; --muted: #5a618e;
+    --accent: #5b6cff; --accent-text: #ffffff; --soft: #e8ebff; --ok: #1f9d55; --off: #9aa0bd; --border: #dce1f5;
+    --warn: #b45309; --star: #f59e0b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12142a; --card: #1c1f3d; --text: #e8eaff; --muted: #a3a8cc;
+      --accent: #7d8cff; --accent-text: #0e1030; --soft: #262a52; --ok: #4ade80; --off: #6b7094; --border: #2c3060;
+      --warn: #fbbf24; --star: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+         font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 600px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  header .brand { font-weight: 700; font-size: 1.1rem; }
+  header .acct { margin-left: auto; color: var(--muted); font-size: 0.95rem; }
+  header a { color: inherit; }
+  h1 { font-size: 1.35rem; margin: 0; overflow-wrap: anywhere; }
+  h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 8px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .muted { color: var(--muted); font-size: 0.92rem; }
+  .small { font-size: 0.85rem; }
+  button, a.button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 10px 16px;
+    background: var(--accent); color: var(--accent-text); cursor: pointer; text-decoration: none; display: inline-block; }
+  button.soft, a.button.soft { background: var(--soft); color: var(--text); }
+  button.link { background: none; color: var(--accent); padding: 4px 6px; font-weight: 600; }
+  button.big, a.button.big { font-size: 1.1rem; padding: 14px 22px; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  input[type=text], input[type=password], select { font: inherit; padding: 8px 11px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); min-width: 0; }
+  label.check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; }
+  .status { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--off); flex: none; }
+  .dot.on { background: var(--ok); }
+  .head { display: flex; align-items: flex-start; gap: 10px; }
+  .head .title { flex: 1; min-width: 0; }
+  .open { margin: 14px 0 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 2px; border-radius: 999px; background: var(--soft);
+          padding: 3px 4px 3px 12px; font-weight: 600; font-size: 0.95rem; }
+  .chip.off { opacity: 0.55; }
+  .chip button { background: none; color: var(--muted); padding: 2px 7px; border-radius: 999px; font-size: 1rem; }
+  .chip button.star.on { color: var(--star); }
+  .chip.ro { padding-right: 12px; }
+  .sync { margin-top: 8px; }
+  .ok { color: var(--ok); }
+  .warn { color: var(--warn); }
+  .error { color: var(--warn); font-size: 0.92rem; margin-top: 8px; min-height: 1.2em; }
+  .asking { font-size: 1.05rem; font-weight: 700; background: #fff4d6; color: #7a4b00; border-radius: 12px; padding: 10px 12px; margin: 10px 0; }
+  .usbstrip { margin: 14px -18px -18px; padding: 12px 18px; border-top: 1px dashed var(--border);
+              background: var(--soft); border-radius: 0 0 16px 16px; }
+  details.menu { position: relative; }
+  details.menu > summary { list-style: none; cursor: pointer; font-weight: 700; padding: 6px 12px; border-radius: 10px;
+                           background: var(--soft); user-select: none; }
+  details.menu > summary::-webkit-details-marker { display: none; }
+  details.menu .items { position: absolute; right: 0; top: calc(100% + 4px); z-index: 5; min-width: 250px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 6px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.18); display: grid; gap: 2px; }
+  details.menu .items button { text-align: left; background: none; color: var(--text); font-weight: 500;
+    padding: 8px 10px; border-radius: 8px; font-size: 0.95rem; }
+  details.menu .items button:hover { background: var(--soft); }
+  details.menu .items .danger { color: var(--warn); }
+  details.menu .items .row-text { padding: 6px 10px; font-size: 0.92rem; color: var(--text); text-align: left; }
+  details.menu .items .row-text.muted { color: var(--muted); font-size: 0.85rem; }
+  header .acct { display: flex; align-items: center; gap: 4px; }
+  details.fold > summary { cursor: pointer; color: var(--muted); margin: 10px 0 4px; }
+  .panel { margin-top: 14px; padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg); }
+  ol.steps { margin: 10px 0 0; padding-left: 22px; }
+  ol.steps li { margin: 3px 0; color: var(--muted); }
+  ol.steps li.now { color: var(--text); font-weight: 600; }
+  ol.steps li.done { color: var(--ok); }
+  ol.steps li.fail { color: var(--warn); font-weight: 600; }
+  ol.steps li .error { font-weight: 400; margin-top: 2px; min-height: 0; }
+  progress { width: 100%; margin-top: 8px; }
+  pre.log { white-space: pre-wrap; font: 0.78rem/1.4 ui-monospace, monospace; max-height: 260px; overflow: auto; }
+  ul.history { margin: 6px 0 0; padding-left: 18px; }
+  ul.history li { margin: 3px 0; }
+  .foot { color: var(--muted); font-size: 0.85rem; margin: 28px 0 8px; line-height: 1.6; }
+  .foot a, main a:not(.button) { color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header><span class="brand" id="brand">Stackchan manager</span><span class="acct" id="acct"></span></header>
+
+  <section class="card" id="notlocal" hidden>
+    <p>This manager has no sign-in: open it on the computer it runs on (<code>http://localhost:…</code>),
+      or scan the QR code on a robot's Manager screen (the gear on its app switcher) with this phone.</p>
+  </section>
+
+  <div id="link"></div>
+  <div id="robots"></div>
+  <div id="newrobot"></div>
+  <p id="addrow" hidden><button class="link" id="add">+ Add a robot</button> <button class="link" id="find" hidden>Find a robot on USB</button></p>
+  <p class="error" id="err"></p>
+
+  <footer class="foot">
+    Stack-chan (スタックチャン) is a registered trademark of Shinya Ishikawa; this project is
+    independent and only made to work with Stack-chan robots.<br>
+    Open source, a proof of concept: <a href="https://github.com/mj41/s-w42-eu-manager">s-w42-eu-manager</a> ·
+    the robot's <a href="https://github.com/mj41/StackChan/tree/embody-mj41">Embody Mode firmware</a> ·
+    <a href="https://s.w42.eu">s.w42.eu</a> · <a href="https://github.com/sponsors/mj41">sponsor mj41</a>
+  </footer>
+</main>
+
+<script type="module">
+import * as usb from "/usb.js";
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, children = []) => {
+  const e = Object.assign(document.createElement(tag), props);
+  e.append(...children.filter((c) => c !== null && c !== undefined && c !== false));
+  return e;
+};
+async function api(method, path, body) {
+  const r = await fetch(path, { method, credentials: "same-origin",
+    headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+  if (!r.ok) {
+    let msg = (await r.text()).trim();
+    try { msg = JSON.parse(msg).message || msg; } catch {}
+    throw new Error(msg || r.statusText);
+  }
+  return r.status === 204 ? null : r.json();
+}
+const ago = (t) => {
+  const s = (Date.now() - new Date(t)) / 1000;
+  if (s < 90) return "just now";
+  if (s < 5400) return Math.round(s / 60) + " min ago";
+  if (s < 129600) return Math.round(s / 3600) + " h ago";
+  return Math.round(s / 86400) + " days ago";
+};
+
+let me = { apps: [], robots: [] };
+let latestFirmware = "";
+let busy = false;          // a USB job runs: no probing, no re-render of its panel
+let keepPanel = false;     // the open panel holds a job's steps or error: redraws leave it as it is
+const plugged = new Map(); // robot id -> {port, hello} on this computer's USB now
+let unknownPort = null;    // a robot on USB that is not one of ours: {port, hello|null}
+let openPanel = null;      // {robot id or "new", preset}
+let openHistory = new Set();
+const openPairings = new Set(); // robot ids with "Paired browsers" open
+let openLinkSettings = false;   // the link card's Settings open (the live refresh redraws it)
+const notices = new Map(); // robot id -> what the last USB job did (shown on its card)
+
+// --- loading and the page ---------------------------------------------------------------------
+
+async function load() {
+  me = await api("GET", "/api/me");
+  // This manager's name, as robots show it: "home on <computer>", or its -name.
+  $("brand").textContent = me.manager;
+  document.title = "Your robots · " + me.manager;
+  render();
+}
+
+function render() {
+  const signedIn = me.signed_in;
+  $("acct").replaceChildren();
+  if (signedIn && me.phone) {
+    const out = el("a", { href: "#", textContent: "Sign out" });
+    out.onclick = async (e) => { e.preventDefault(); await api("POST", "/auth/logout"); location.reload(); };
+    $("acct").append("this phone · ", out);
+  } else if (signedIn) $("acct").textContent = "this computer";
+  $("notlocal").hidden = signedIn;
+  if (!signedIn) { $("robots").replaceChildren(); $("newrobot").replaceChildren(); $("link").replaceChildren(); $("addrow").hidden = true; return; }
+  const robots = me.robots || [];
+  if (!((busy || keepPanel) && openPanel?.id === "new")) {
+    const showNew = !robots.length || openPanel?.id === "new" || unknownPort;
+    $("newrobot").replaceChildren(...(showNew ? [newRobotCard()] : []));
+    $("addrow").hidden = showNew;
+  }
+  const keep = busy || keepPanel ? openPanel?.id : null;
+  const cards = robots.map((r) => r.id === keep ? $("robot-" + r.id) : robotCard(r, robotCtx(r)));
+  $("robots").replaceChildren(...cards);
+  $("link").replaceChildren(...(me.link ? [linkCard(me.link)] : []));
+}
+
+const appsByID = () => Object.fromEntries((me.apps || []).map((a) => [a.id, a]));
+
+// robotCtx: a robot's actions go to /api/my/robots/{id}; byID: the catalog by app id.
+const robotCtx = (r) => ({ base: `/api/my/robots/${encodeURIComponent(r.id)}`, byID: appsByID() });
+
+// --- the link (this home manager's, to an upstream manager such as sm.w42.eu) ----------------------
+
+function linkCard(l) {
+  const card = el("section", { className: "card", id: "linkcard" });
+  const full = el("input", { type: "checkbox", checked: l.mode === "full" });
+  const share = el("input", { type: "checkbox", checked: !!l.share_local });
+  const opts = [el("label", { className: "check" }, [full, `${l.upstream} may change the robots too (it asks; this manager signs; each change is in the robot's history)`]),
+    el("label", { className: "check" }, [share, `Show this manager's local address there (for "Manage at home")`])];
+  if (!l.linked) {
+    const go = el("button", { textContent: `Link to ${l.upstream}` });
+    go.onclick = () => act(async () => {
+      const res = await api("POST", "/api/link/start", { mode: full.checked ? "full" : "read-only", share_local: share.checked, return: location.origin });
+      location.href = res.url;
+    });
+    card.append(el("h2", { textContent: "From anywhere", style: "margin-top:0" }),
+      el("p", { className: "muted small", textContent: `Link this home to your account on ${l.upstream}: your robots show there, live, and they can get its apps. You approve it there once.` }),
+      ...opts, go);
+    return card;
+  }
+  const save = () => act(() => api("POST", "/api/link/settings", { mode: full.checked ? "full" : "read-only", share_local: share.checked }));
+  full.onchange = save;
+  share.onchange = save;
+  const unlink = el("button", { className: "link", textContent: "Unlink" });
+  unlink.onclick = () => confirm(`Unlink from ${l.upstream}? Its apps on your robots stop working.`) && act(() => api("POST", "/api/link/unlink"));
+  card.append(el("div", { className: "status small" }, [el("span", { className: "dot" + (l.connected ? " on" : "") }),
+    (l.connected ? `This home is linked to ${l.upstream}, connected` : `This home is linked to ${l.upstream}, not connected now` + (l.error ? ` (${l.error})` : "")) +
+    (l.account ? ` · account ${l.account}` : "")]),
+    el("p", { className: "muted small", style: "margin:4px 0 0" , textContent: l.mode === "full"
+      ? `${l.upstream} shows your robots there and may change them; this home signs every change.`
+      : `${l.upstream} shows your robots there, read-only; changes only on this page.` }),
+    el("details", { className: "fold", open: openLinkSettings, ontoggle: (e) => { openLinkSettings = e.target.open; } },
+      [el("summary", { textContent: "Settings" }), ...opts, unlink]));
+  return card;
+}
+
+// --- a robot ------------------------------------------------------------------------------------
+
+// robotCard is one robot (this manager is its primary: every action, USB).
+function robotCard(r, ctx) {
+  const byID = ctx.byID;
+  const card = el("section", { className: "card", id: "robot-" + r.id });
+  const title = r.name || r.id;
+  const start = byID[r.start];
+  const write = !r.moved && !r.left && !r.off;
+
+  // Name (editable), status, the ⋯ menu.
+  const nameBox = el("div", { className: "title" }, [el("h1", { textContent: title }),
+    el("div", { className: "muted small" }, [r.name ? r.id + " · " : "", statusLine(r, byID)])]);
+  const rename = () => {
+    const input = el("input", { type: "text", value: r.name || "", placeholder: "e.g. Ema's robot", maxLength: 40 });
+    const save = el("button", { className: "soft", textContent: "Save" });
+    save.onclick = () => act(() => api("POST", `${ctx.base}/name`, { name: input.value }));
+    nameBox.replaceChildren(el("div", { className: "row" }, [input, save]));
+    input.focus();
+  };
+  const menu = el("details", { className: "menu" });
+  const item = (text, fn, cls = "") => { const b = el("button", { textContent: text, className: cls }); b.onclick = () => { menu.open = false; fn(); }; return b; };
+  const items = [item(openHistory.has(r.id) ? "Hide history" : "History", () => { openHistory.has(r.id) ? openHistory.delete(r.id) : openHistory.add(r.id); render(); })];
+  items.unshift(item("Rename", rename),
+    item(r.public ? "Make private (only you pair with it)" : "Make public (its QR code pairs anyone)",
+      () => act(() => api("POST", `${ctx.base}/access`, { public: !r.public }))),
+    item("Firmware and permissions (USB)", () => openUSB(r.id, "firmware")),
+    item("Restore an earlier firmware (USB)", () => openUSB(r.id, "restore")));
+  if (write && r.remote_apps) items.push(item("Turn the manager off (USB only)", () => confirm(`Turn ${me.manager} off for ${title}? ` +
+    "Its apps then change only over USB, and it switches apps on its app switcher (the QR screen). Only the robot (its Manager screen) or a USB setup turns it on again.") &&
+    act(() => api("POST", `${ctx.base}/disable`))));
+  items.push(item("Remove", () => confirm(`Remove ${title}? All its app tokens stop working.`) && act(() => api("DELETE", ctx.base)), "danger"));
+  menu.append(el("summary", { textContent: "⋯", title: "More" }), el("div", { className: "items" }, items));
+  card.append(el("div", { className: "head" }, [nameBox, menu]));
+
+  if (r.moved) card.append(el("p", { className: "warn small", textContent: `Managed by ${r.moved} now (chosen on the robot's screen). It comes back the same way.` }));
+  else if (r.left) card.append(el("p", { className: "warn small", textContent:
+    `Set up with ${r.left.to} over USB ${ago(r.left.at)}: it talks only to that one now, and changes here no longer reach it.` +
+    " Set it up here again to manage it here, or remove it here." }));
+  else if (!r.online && !r.off) {
+    const away = r.last_seen ? (Date.now() - new Date(r.last_seen)) / 1000 : Infinity;
+    if (away > 3600) card.append(el("p", { className: "warn small", textContent:
+      `Not connected to ${me.manager} ${r.last_seen ? "for " + ago(r.last_seen).replace(" ago", "") : "yet"}.` +
+      " It may be off or away from its Wi-Fi. If it was set up with another manager over USB, it talks only to that one now" +
+      ": set it up here again, or remove it here." }));
+  }
+  if (r.off) card.append(el("p", { className: "warn small", textContent: r.off === "pending"
+    ? "Turning the manager off: the robot gets it when it connects."
+    : `The manager is off on this robot (${r.off === "robot" ? "turned off on its screen" : "turned off from a page"}): its apps change only over USB, ` +
+      "and it switches apps on its app switcher. Turn it on on the robot (app switcher, gear, Turn on) or with a USB setup." }));
+
+  // Open the app it is on now (online), else the one it starts with; the start app a tap away
+  // (and the robot switches there).
+  const now = r.online && byID[r.last_app] && r.apps.includes(r.last_app) ? byID[r.last_app] : null;
+  const main = now || start;
+  const openRow = el("div", { className: "open row" });
+  if (main) openRow.append(main.web ? el("a", { className: "button big", href: main.web, target: "_blank", rel: "noopener", textContent: "Open " + main.name })
+    : el("span", { className: "muted", textContent: "On " + main.name }));
+  if (now && start && now !== start) openRow.append(appLink(r, ctx, r.start, start, { className: "button soft",
+    textContent: (switches(r, r.start) ? "Switch to " : "Open ") + start.name }));
+  // Restart: greyed out while the robot answers, highlighted when it does not.
+  const restart = el("button", { className: r.stuck ? "" : "soft", textContent: r.stuck ? "Restart the robot" : "Restart",
+    disabled: !r.online || !r.stuck, title: r.stuck ? "It does not respond: restart it (it comes back on its start app)" : "It responds; restart only when it does not" });
+  restart.onclick = () => act(() => api("POST", `${ctx.base}/restart`));
+  openRow.append(restart);
+  card.append(openRow);
+  if (r.stuck) card.append(el("p", { className: "asking", textContent: "The robot is not responding (its app loop stopped). Restart it from here." }));
+  // A question on its screen, and the answer to the last switch.
+  if (r.question) card.append(el("p", { className: "asking", textContent: `Tap Yes on the robot: “${r.question.text}” (${r.question.seconds_left} s)` }));
+  else if (r.asked && r.answer) card.append(el("p", { className: r.answer === "switched" ? "ok small" : "warn small",
+    textContent: r.answer === "switched" ? `✓ On ${byID[r.last_app]?.name || r.app_name || "the app"}` :
+      r.answer === "not confirmed" ? "The switch was not confirmed on the robot (no Yes in time)." : `The robot: ${r.answer}` }));
+
+  // Apps: chips; changes when the robot allows them.
+  card.append(el("h2", { textContent: "Apps" }), appChips(r, ctx, write && r.remote_apps, (apps, startID) =>
+    act(() => api("POST", `${ctx.base}/apps`, { apps, start: startID }))));
+  card.append(syncLine(r, byID));
+  card.append(pairingsBox(r, byID, ctx, write));
+
+  // Details: access, firmware.
+  // The camera and the microphone, as set on the robot (only there or over USB).
+  if (r.camera_mic_off) card.append(el("p", { className: "muted small", style: "margin:10px 0 0",
+    textContent: `🔒 Camera and microphone off on the robot (${r.camera_mic_off}).` }));
+  else if (r.privacy && r.privacy !== "on") card.append(el("p", { className: "muted small", style: "margin:10px 0 0",
+    textContent: `Camera and microphone: ${r.privacy} (set on the robot).` }));
+  const fw = r.firmware ? r.firmware + (latestFirmware && r.firmware !== latestFirmware ? ` · ${latestFirmware} available (update over USB)` : latestFirmware ? " (latest)" : "") : "firmware not known yet";
+  card.append(el("p", { className: "muted small", style: "margin:10px 0 0",
+    textContent: `${r.public ? "Public" : "Private"} · ${fw}` }));
+
+  if (openHistory.has(r.id)) card.append(el("ul", { className: "history muted small" },
+    (r.history.length ? [...r.history].reverse() : [{ what: "nothing yet" }]).map((h) => el("li", {},
+      [h.time ? `${new Date(h.time).toLocaleString()} · ${{ usb: "over USB", online: "online", robot: "the robot" }[h.how] || h.how} · ` : "", h.what]))));
+
+  if (notices.has(r.id)) card.append(el("p", { className: "ok small", style: "margin:10px 0 0", textContent: notices.get(r.id) }));
+
+  // On this computer's USB now.
+  const p = plugged.get(r.id);
+  if (p && openPanel?.id !== r.id) card.append(el("div", { className: "usbstrip row" }, [
+    el("span", { className: "small", textContent: "⏚ On this computer's USB:" }),
+    el("button", { textContent: "Update firmware", onclick: () => openUSB(r.id, "firmware") }),
+    el("button", { textContent: "Write apps", onclick: () => openUSB(r.id, "apps") }),
+    el("button", { textContent: "Permissions", onclick: () => openUSB(r.id, "apps") })]));
+  if (openPanel?.id === r.id) card.append(usbPanel(r));
+  return card;
+}
+
+// switches: opening the app also moves the robot there (it is online on another app, and its
+// apps may be changed from this page).
+const switches = (r, id) => !r.moved && !r.left && r.remote_apps && r.online && r.last_app !== id;
+
+// appLink opens the app in a new tab and, when the robot is on another app, asks it to switch
+// there (at once, over its channel; a Yes on its screen when it was set up so): the card shows the
+// question and the answer.
+function appLink(r, ctx, id, app, props) {
+  const sw = switches(r, id);
+  if (!app.web && !sw) return el("span", { textContent: props.textContent }); // nothing to open or do
+  const a = el(app.web ? "a" : "button", { ...(app.web ? { href: app.web, target: "_blank", rel: "noopener" } : {}),
+    title: sw ? `Open ${app.name}; the robot switches there` : "Open " + app.name, ...props });
+  if (sw) a.onclick = () => act(() => api("POST", `${ctx.base}/switch`, { app: id }));
+  return a;
+}
+
+// The browsers paired with the robot on its apps (as the apps report them): the owner removes old
+// ones. An app that encrypts end to end also makes the robot forget the browser.
+function pairingsBox(r, byID, ctx, write) {
+  const ps = r.pairings || [];
+  const watching = ps.filter((p) => p.watching).length;
+  const box = el("details", { className: "fold pairings", open: openPairings.has(r.id) }, [el("summary", { textContent:
+    ps.length ? `Paired browsers: ${ps.length}` + (watching ? ` (${watching} watching now)` : "") : "Paired browsers: none" })]);
+  box.ontoggle = () => { box.open ? openPairings.add(r.id) : openPairings.delete(r.id); };
+  const remove = (app, body, what) => confirm(what) && act(() => api("POST", `${ctx.base}/pairings/remove`, { app, ...body }));
+  const keys = [...new Set(ps.map((p) => p.app))];
+  for (const key of keys) {
+    const name = byID[key]?.name || key;
+    const list = ps.filter((p) => p.app === key);
+    const head = el("div", { className: "row small", style: "justify-content:space-between;margin-top:6px" }, [el("b", { textContent: name })]);
+    if (write && list.filter((p) => !p.removing).length > 1) head.append(el("button", { className: "soft small", textContent: "Remove all",
+      onclick: () => remove(key, { all: true }, `Unpair all ${list.length} browsers from ${name}? They need the robot's QR code again.`) }));
+    box.append(head, el("ul", { className: "history small" }, list.map((p) => el("li", { style: "display:flex;gap:8px;align-items:center;justify-content:space-between" }, [
+      el("span", { style: "flex:1" }, [p.device || "A browser",
+        el("span", { className: "muted", textContent: [p.paired ? " · paired " + ago(p.paired) : "", p.last_seen ? " · last seen " + ago(p.last_seen) : "",
+          p.e2e ? " · end-to-end" : ""].join("") }),
+        p.watching ? el("span", { className: "ok", textContent: " · watching now" }) : ""]),
+      p.removing ? el("span", { className: "muted", style: "flex-shrink:0", textContent: r.online && r.last_app === key ? "removing…"
+        : `removed when the robot next uses ${name}` }) : write ? el("button", { className: "soft small", textContent: "Remove", style: "flex-shrink:0",
+        onclick: () => remove(key, { id: p.id }, `Unpair ${p.device || "this browser"} from ${name}?` +
+          (p.e2e ? " The robot also forgets it, in every app." : "")) }) : ""]))));
+  }
+  if (!ps.length) box.append(el("p", { className: "muted small", textContent: "No browser is paired (as the apps report it)." }));
+  return box;
+}
+
+// statusLine: the robot's connection to this manager.
+function statusLine(r, byID) {
+  const on = r.online;
+  const app = byID[r.last_app]?.name || r.app_name;
+  const where = app ? " · on " + app : "";
+  return el("span", { className: "status", style: "display:inline-flex" }, [el("span", { className: "dot" + (on ? " on" : "") }),
+    r.stuck ? "not responding" + where : on ? "connected" + where + (r.conn && r.conn !== "registered" ? ` (${r.conn})` : "")
+      : r.last_seen ? "not connected · last seen " + ago(r.last_seen) + where : "not connected yet"]);
+}
+
+function syncLine(r, byID) {
+  if (r.left) return el("p", { className: "muted small sync", textContent: "What it had when it left." });
+  if (r.off) return el("p", { className: "muted small sync", textContent: "Changes go over USB (the manager is off on the robot)." });
+  if (!r.remote_apps) return el("p", { className: "muted small sync", textContent:
+    "Changes go over USB (this robot was set up so): plug it into this computer." });
+  if (r.version > r.applied) {
+    const waiting = (r.waiting || []).map((id) => byID[id]?.name || id);
+    return el("p", { className: "muted small sync", textContent: (r.online ? "Sending to the robot" : "The robot gets the change when it connects") +
+      (waiting.length ? ` (new: ${waiting.join(", ")})` : "") + "." });
+  }
+  if (!r.online) return el("p", { className: "muted small sync", textContent: "✓ On the robot when it was last seen" });
+  return el("p", { className: "small sync ok", textContent: "✓ On the robot" });
+}
+
+// appChips: the robot's apps, ★ the start app; × removes, "+ add" adds. editable false: read-only.
+// change(apps, start) saves (online), or the USB panel keeps the choice (state.apps, state.start).
+function appChips(r, ctx, editable, change) {
+  const byID = ctx.byID;
+  const box = el("div", { className: "chips" });
+  for (const id of r.apps) {
+    const a = byID[id];
+    // The name opens the app (in a new tab), and the robot comes along.
+    const name = a ? appLink(r, ctx, id, a, { textContent: a.name, style: "color:inherit;text-decoration:none;background:none;padding:0;font-weight:600" }) : id;
+    const chip = el("span", { className: "chip" + (editable ? "" : " ro") }, [name]);
+    if (a?.upstream) chip.append(el("span", { className: "muted", style: "font-size:.8em;margin-left:4px", textContent: me.link?.upstream || "linked" }));
+    if (editable) {
+      const star = el("button", { className: "star" + (id === r.start ? " on" : ""), textContent: id === r.start ? "★" : "☆",
+        title: id === r.start ? "It starts with this app" : "Start with this app" });
+      star.onclick = () => id !== r.start && change(r.apps, id);
+      const rm = el("button", { textContent: "×", title: "Remove", disabled: r.apps.length < 2 });
+      rm.onclick = () => change(r.apps.filter((x) => x !== id), id === r.start ? r.apps.find((x) => x !== id) : r.start);
+      chip.append(star, rm);
+    } else if (id === r.start) chip.append(el("span", { textContent: " ★", style: "color:var(--star)" }));
+    box.append(chip);
+  }
+  const others = Object.entries(byID).filter(([id]) => !r.apps.includes(id)).map(([id, a]) => ({ ...a, id }));
+  if (editable && others.length) {
+    const sel = el("select", {}, [el("option", { value: "", textContent: "+ add" }),
+      ...others.map((a) => el("option", { value: a.id, textContent: a.name + (a.upstream ? ` (${me.link?.upstream || "linked"})` : "") }))]);
+    sel.onchange = () => sel.value && change([...r.apps, sel.value], r.start || sel.value);
+    box.append(sel);
+  }
+  if (!r.apps.length) box.append(el("span", { className: "muted", textContent: "no apps" }));
+  return box;
+}
+
+// --- over USB: a new robot, or one of yours on the cable ----------------------------------------
+
+function newRobotCard() {
+  const card = el("section", { className: "card", id: "robot-new" });
+  const first = !(me.robots || []).length;
+  card.append(el("h1", { textContent: first ? "Set up your robot" : "Add a robot" }));
+  if (!usb.supported()) {
+    card.append(el("p", { className: "warn", textContent: "Setting a robot up needs Chrome or Edge on a computer (USB from the browser); not a phone." }));
+    return card;
+  }
+  const u = unknownPort;
+  card.append(el("p", { textContent: u
+    ? (u.hello ? `A robot is plugged in: ${u.hello.id} (${u.hello.firmware ? "Embody Mode " + u.hello.firmware : "?"}), not yours yet.`
+               : "A device is plugged in; it does not answer as Embody Mode (new robot, or another firmware): it gets the firmware.")
+    : "Plug your Stackchan into this computer with a USB-C data cable (the port on its head), then connect." }));
+  if (!openPanel || openPanel.id !== "new") {
+    const go = el("button", { className: "big", textContent: u ? "Set it up" : "Connect" });
+    go.onclick = async () => {
+      if (!u) {
+        try { await usb.choosePort(); } catch { return; } // the chooser closed without a choice
+        await probe();
+        if (!unknownPort) return; // one of yours: its card has the USB strip now
+      }
+      openPanel = { id: "new", preset: unknownPort?.hello ? "apps" : "firmware" };
+      render();
+    };
+    card.append(go);
+    if (!first) card.append(" ", el("button", { className: "link", textContent: "Cancel", onclick: () => { openPanel = null; unknownPort = null; render(); } }));
+  } else card.append(usbPanel(null));
+  return card;
+}
+
+function openUSB(id, preset) {
+  openPanel = { id, preset };
+  keepPanel = false;
+  render();
+  $("robot-" + id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// The USB panel: firmware, apps, permissions, Wi-Fi; then the steps as they run.
+function usbPanel(r) {
+  const preset = openPanel.preset;
+  const panel = el("div", { className: "panel" });
+  const known = r ? plugged.get(r.id) : null;
+  if (preset === "restore") return restorePanel(panel, r);
+  const state = { apps: r ? [...r.apps] : (me.apps || []).map((a) => a.id), start: r ? r.start : (me.apps || [])[0]?.id };
+  const appsBox = el("div");
+  const drawApps = () => appsBox.replaceChildren(appChips({ ...r, apps: state.apps, start: state.start }, { byID: appsByID() }, true,
+    (apps, start) => { state.apps = apps; state.start = start; drawApps(); }));
+  drawApps();
+  // Install the firmware when asked, or when it is not known to be the latest.
+  const has = r ? r.firmware : unknownPort?.hello?.firmware;
+  const fw = el("input", { type: "checkbox", checked: preset === "firmware" || (!r && (!has || (latestFirmware && has !== latestFirmware))) });
+  const backup = el("input", { type: "checkbox", checked: true });
+  const autostart = el("input", { type: "checkbox", checked: false });
+  const remote = el("input", { type: "checkbox", checked: r ? r.remote_apps || !r.history.length : true });
+  const askPin = el("input", { type: "checkbox", checked: r ? r.ask_pin || !r.history.length : true });
+  const second = el("input", { type: "checkbox", checked: false });
+  const linked = me.link?.linked && me.link?.connected;
+  const ssid = el("input", { type: "text", placeholder: "Wi-Fi name", value: me.wifi?.ssid || "", autocomplete: "off" });
+  const pass = el("input", { type: "password", placeholder: "password", value: me.wifi?.password || "", autocomplete: "off" });
+  const backupRow = el("label", { className: "check" }, [backup, "Back up its current firmware first (to this computer; the first one is its original)"]);
+  fw.onchange = () => { backupRow.hidden = !fw.checked; };
+  backupRow.hidden = !fw.checked;
+  const go = el("button", { className: "big", textContent: r ? "Write to the robot" : "Set up" });
+  const cancel = el("button", { className: "link", textContent: "Cancel" });
+  cancel.onclick = () => { openPanel = null; keepPanel = false; render(); };
+  const run = el("div");
+  let more;
+  panel.append(
+    el("h2", { textContent: "Apps", style: "margin-top:0" }), appsBox,
+    el("h2", { textContent: "Firmware" }),
+    el("label", { className: "check" }, [fw, `Install the latest official Embody Mode${latestFirmware ? " " + latestFirmware : ""}` +
+      (known?.hello?.firmware ? ` (it has ${known.hello.firmware})` : "")]), backupRow,
+    el("h2", { textContent: "Later, from anywhere" }),
+    el("label", { className: "check" }, [remote, `Let ${location.host} change this robot's apps (the robot accepts only lists signed by this manager)`]),
+    el("label", { className: "check" }, [askPin, "The robot asks on its screen before it switches apps or its start app changes"]),
+    linked ? el("label", { className: "check" }, [second, `${me.link.upstream} may become this robot's manager, chosen on the robot's Manager screen (for a robot that leaves home)`]) : null,
+    more = el("details", { className: "fold", open: !r && !me.wifi }, [el("summary", { textContent: "Wi-Fi and more" }),
+      el("p", { className: "muted small", textContent: "Wi-Fi goes to the robot over the cable, never to the server. Without it, the robot opens its own hotspot and shows how to connect." }),
+      el("div", { className: "row" }, [ssid, pass]),
+      el("label", { className: "check" }, [autostart, "Start Embody Mode when the robot turns on"])]),
+    el("div", { className: "row", style: "margin-top:14px" }, [go, cancel]), run);
+  go.onclick = () => runSetup(r, { panel, run, go, cancel, state, fw: fw.checked, backup: fw.checked && backup.checked,
+    remote: remote.checked, askPin: askPin.checked, second: linked && second.checked, autostart: autostart.checked,
+    // A robot set up before keeps its Wi-Fi unless "Wi-Fi and more" is open.
+    wifi: ssid.value.trim() && (!r || more.open) ? { ssid: ssid.value.trim(), password: pass.value } : null,
+    autostartSet: !r || more.open });
+  return panel;
+}
+
+const STEP = { connect: "Connect to the robot", backup: "Back up the current firmware", firmware: "Install the firmware",
+  identify: "Read the robot's id", apps: "Get the apps' tokens", write: "Write the settings (confirm on the robot if it asks)",
+  restart: "Restart into Embody Mode", check: "Check the backup" };
+
+function runner(run, keys) {
+  const steps = el("ol", { className: "steps" }, keys.map((k) => { const li = el("li", { textContent: STEP[k] }); li.dataset.k = k; return li; }));
+  const bar = el("progress", { max: 1, value: 0, hidden: true });
+  const log = el("pre", { className: "log" });
+  const err = el("p", { className: "error" });
+  const backupLink = el("p", { hidden: true });
+  const asking = el("p", { className: "asking", hidden: true });
+  let askTimer = null, failNote = null;
+  run.replaceChildren(steps, bar, asking, err, backupLink, el("details", { className: "fold" }, [el("summary", { textContent: "Details" }), log]));
+  return {
+    err, backupLink,
+    hooks: {
+      step(k) { let seen = false; for (const li of steps.children) { if (li.dataset.k === k) { li.className = "now"; seen = true; } else li.className = seen ? "" : "done"; } },
+      progress(v) { bar.hidden = v === null; if (v !== null) bar.value = v; },
+      // The robot may ask on its screen now (a new start app): say so, loud, with the time left.
+      asking(seconds) {
+        clearInterval(askTimer);
+        asking.hidden = !seconds;
+        if (!seconds) return;
+        const until = Date.now() + seconds * 1000;
+        const tick = () => {
+          const left = Math.max(0, Math.round((until - Date.now()) / 1000));
+          asking.textContent = `👉 Look at the robot: if it asks, tap Yes on its screen (${left} s).`;
+        };
+        tick();
+        askTimer = setInterval(tick, 1000);
+      },
+      log(t) { log.textContent += t; },
+      backup(blob, name, first) {
+        const a = el("a", { href: URL.createObjectURL(blob), download: name, textContent: name });
+        backupLink.replaceChildren(first ? "Backup of the robot's original firmware: " : "Backup of its previous firmware: ", a,
+          el("br"), el("span", { className: "muted small", textContent: "Keep it private: it holds the robot's old settings, Wi-Fi passwords too." }));
+        backupLink.hidden = false;
+        a.click();
+      },
+    },
+    // A failed step shows why under itself (and what to do: place()); other errors under the list.
+    fail(e) {
+      const now = steps.querySelector("li.now");
+      if (!now) { err.textContent = e.message || String(e); return; }
+      now.className = "fail";
+      failNote = el("div", { className: "error", textContent: e.message || String(e) });
+      now.append(failNote);
+    },
+    place(node) { (failNote || err).after(node); },
+    clearFail() {
+      err.textContent = "";
+      if (failNote) { failNote.parentElement.className = "now"; failNote.remove(); failNote = null; }
+    },
+  };
+}
+
+async function portFor(r) {
+  if (r && plugged.get(r.id)) return plugged.get(r.id).port;
+  if (!r && unknownPort) return unknownPort.port;
+  const ports = await usb.knownPorts();
+  return ports.length === 1 ? ports[0] : usb.choosePort();
+}
+
+async function runSetup(r, o) {
+  if (!o.state.apps.length) { o.run.replaceChildren(el("p", { className: "error", textContent: "Choose at least one app." })); return; }
+  const keys = ["connect", ...(o.fw && o.backup ? ["backup"] : []), ...(o.fw ? ["firmware"] : []), "identify", "apps", "write", "restart"];
+  const ui = runner(o.run, keys);
+  keepPanel = true;
+  let port;
+  try { port = await portFor(r); } catch (e) {
+    if (e.name !== "NotFoundError") ui.fail(e); // NotFoundError: the chooser was closed without a choice
+    return;
+  }
+  busy = true;
+  o.go.disabled = o.cancel.disabled = true;
+  const done = (res) => {
+    for (const li of o.run.querySelectorAll("li")) li.className = "done";
+    const start = appsByID()[o.state.start]?.name || "its start app";
+    notices.set(res.hello.id, `✓ ${new Date().toLocaleTimeString()}: written over USB (${o.fw ? "firmware " + (latestFirmware || "") + ", " : ""}apps). ` +
+      `It restarts` + (res.wifi ? `, connects to Wi-Fi “${res.wifi.ssid}”` : "") + ` and opens ${start}.`);
+    openPanel = null;
+    keepPanel = false;
+    unknownPort = null;
+  };
+  // Not confirmed on the robot in time: only the last step again (the rest is done).
+  const offerRetry = (e) => {
+    if (!e.retry) return;
+    const again = el("button", { textContent: "Ask on the robot again", style: "margin-top:6px" });
+    again.onclick = async () => {
+      again.remove();
+      ui.clearFail();
+      busy = true;
+      try { done(await e.retry()); } catch (e2) { ui.fail(e2); offerRetry(e2); }
+      await load().catch(() => {});
+      busy = false;
+      if (!openPanel) render();
+    };
+    ui.place(again);
+  };
+  try {
+    const res = await usb.setUp(port, {
+      firmware: o.fw ? "latest" : "keep", backup: o.backup,
+      autostart: o.autostartSet ? o.autostart : undefined, wifi: o.wifi || undefined,
+      apps: async (h) => {
+        if (r && h.id !== r.id) throw new Error(`The robot on the cable is ${h.id}, not ${r.name || r.id}.`);
+        return api("POST", `/api/my/robots/${encodeURIComponent(h.id)}/setup`, { apps: o.state.apps, start: o.state.start,
+          remote_apps: o.remote, ask_pin: o.askPin, second: !!o.second, firmware: o.fw ? latestFirmware : h.firmware, installed: o.fw });
+      },
+    }, ui.hooks);
+    done(res);
+  } catch (e) { ui.fail(e); offerRetry(e); }
+  // Refresh while still busy: a failed job's panel (and its error) stays as it is.
+  await load().catch(() => {});
+  busy = false;
+  o.go.disabled = o.cancel.disabled = false;
+  if (!openPanel) render();
+  setTimeout(probe, 8000); // it comes back on USB after the restart
+}
+
+function restorePanel(panel, r) {
+  const file = el("input", { type: "file", accept: ".bin" });
+  const go = el("button", { textContent: "Restore" });
+  const cancel = el("button", { className: "link", textContent: "Cancel", onclick: () => { openPanel = null; keepPanel = false; render(); } });
+  const run = el("div");
+  panel.append(el("p", { style: "margin-top:0", textContent: "Puts back a firmware a setup backed up (the robot's original, or its previous one). Only a file this robot recorded goes in." }),
+    file, el("div", { className: "row", style: "margin-top:10px" }, [go, cancel]), run);
+  go.onclick = async () => {
+    if (!file.files[0]) { run.replaceChildren(el("p", { className: "error", textContent: "Choose the backup file." })); return; }
+    const ui = runner(run, ["connect", "check", "firmware", "restart"]);
+    keepPanel = true;
+    let port;
+    try { port = await portFor(r); } catch { return; }
+    busy = true; go.disabled = true;
+    try {
+      const rec = await usb.restore(port, file.files[0], ui.hooks);
+      for (const li of run.querySelectorAll("li")) li.className = "done";
+      run.append(el("p", { className: "ok", textContent: `The robot restarts with its ${rec.which} firmware (${rec.project || "?"} ${rec.version || ""}).` }));
+    } catch (e) { ui.fail(e); } finally { busy = false; go.disabled = false; }
+  };
+  return panel;
+}
+
+// --- noticing a robot on the cable --------------------------------------------------------------
+
+async function probe() {
+  if (busy || !usb.supported() || !me.signed_in) return;
+  const ports = await usb.knownPorts();
+  const mine = new Set((me.robots || []).map((r) => r.id));
+  plugged.clear();
+  let unknown = null;
+  for (const port of ports) {
+    const h = await usb.hello(port, 4000);
+    if (h?.id && mine.has(h.id)) plugged.set(h.id, { port, hello: h });
+    else unknown = { port, hello: h };
+  }
+  unknownPort = unknown;
+  if (!busy) render();
+}
+
+// Errors of anything the page does show up, never vanish.
+window.addEventListener("unhandledrejection", (e) => { $("err").textContent = "Error: " + (e.reason?.message || e.reason); });
+window.addEventListener("error", (e) => { $("err").textContent = "Error: " + e.message; });
+
+async function act(fn) {
+  $("err").textContent = "";
+  try { await fn(); await load(); } catch (e) { $("err").textContent = e.message; }
+}
+
+$("add").onclick = () => { openPanel = { id: "new", preset: "firmware" }; render(); };
+// Find a robot on USB: Chrome's port chooser (the automatic noticing sees only ports it was
+// allowed before), then the robot it is: one of yours → its card, with the USB strip; another
+// one that answers → Add a robot with it; no answer as Embody Mode → it gets the firmware first.
+$("find").hidden = !usb.supported();
+$("find").onclick = async () => {
+  let port;
+  try { port = await usb.choosePort(); } catch { return; } // the chooser closed without a choice
+  await probe();
+  const mine = [...plugged.entries()].find(([, p]) => p.port === port);
+  if (mine) {
+    openPanel = null;
+    notices.set(mine[0], "Found on this computer's USB: update its firmware, write its apps or change its permissions below.");
+    render();
+    $("robot-" + mine[0])?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (unknownPort?.port !== port) return;
+  openPanel = { id: "new", preset: unknownPort.hello ? "apps" : "firmware" };
+  render();
+  $("robot-new")?.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+// The ⋯ menus close on a click anywhere else, and on Escape.
+document.addEventListener("click", (e) => {
+  for (const m of document.querySelectorAll("details.menu[open]")) if (!m.contains(e.target)) m.open = false;
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") for (const m of document.querySelectorAll("details.menu[open]")) m.open = false;
+});
+if (usb.supported()) {
+  navigator.serial.addEventListener("connect", () => setTimeout(probe, 1500));
+  navigator.serial.addEventListener("disconnect", () => setTimeout(probe, 500));
+}
+fetch("/firmware/manifest.json").then((r) => r.ok ? r.json() : null).then((m) => { if (m) { latestFirmware = m.version; render(); } }).catch(() => {});
+load().then(probe).catch((e) => { $("err").textContent = e.message; });
+// Live: the robots' state (their channels) every 2 s, unless the person is typing or in a menu.
+setInterval(() => {
+  const typing = ["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName) || document.querySelector("details.menu[open]");
+  if (!busy && !openPanel && !typing && !document.hidden) load().catch(() => {});
+}, 2000);
+</script>
+</body>
+</html>
